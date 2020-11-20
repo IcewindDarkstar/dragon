@@ -20,7 +20,8 @@ channel_mapping = ChannelMappingService('channel_mapping.json')
 
 cog_parameters = {
     'orga_id': int(os.getenv('RESTYA_ORGA_ID')),
-    'board_template': os.getenv('RESTYA_BOARD_TEMPLATE')
+    'board_template': os.getenv('RESTYA_BOARD_TEMPLATE'),
+    'default_list': os.getenv('RESTYA_BOARD_TEMPLATE').split(',')[0]
 }
 
 bot = commands.Bot(command_prefix='!dragon.')
