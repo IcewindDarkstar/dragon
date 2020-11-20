@@ -63,12 +63,13 @@ class RestyaCog(commands.Cog, name='Support'):
     async def add_ticket(self, ctx: commands.Context, *, title: str):
         ctx.typing()
         with self.__lock:
+            user_title = f"{ctx.author.display_name}: {title}"
             board_id = self._channel_mapping.get_board_id(ctx.channel.id)
             if board_id is None:
                 await ctx.send('There is no board for this channel, an admin create one by calling the create_board command!')
             else:
-                card = self._restya_service.add_card(board_id, title, self._parameters['default_list'])
-                await ctx.send(f"Your ticket with id {card['id']} was created, you can add a description with the add_description command.")
+                card = self._restya_service.add_card(board_id, user_title, self._parameters['default_list'])
+                await ctx.send(f"Your ticket with id {card['id']} was created, you can add a description with the set_description command.")
 
     @add_ticket.error
     async def add_card_error(self, ctx: commands.Context, error):
