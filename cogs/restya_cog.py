@@ -1,5 +1,5 @@
 from threading import Lock
-from typing import Dict, Optional
+from typing import Dict
 
 from discord.ext import commands
 
@@ -30,7 +30,7 @@ class RestyaCog(commands.Cog, name='Support'):
         else:
             board = self._restya_service.get_board(board_id)
             ctx.typing()
-            output = [f"Board ***{board['name']}*** contains:"]
+            output = [f"Board ***{board['name']} [{board_id}]*** contains:"]
             for board_list in board['lists']:
                 output.append(f"**{board_list['name']}:**")
                 if board_list['cards'] is not None:
@@ -72,7 +72,7 @@ class RestyaCog(commands.Cog, name='Support'):
                 await ctx.send(f"Your ticket with id {card['id']} was created, you can add a description with the set_description command.")
 
     @add_ticket.error
-    async def add_card_error(self, ctx: commands.Context, error):
+    async def add_ticket_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send('Could not find the required argument "title", please provide a title for your ticket!')
             await ctx.send_help(self.add_ticket)
