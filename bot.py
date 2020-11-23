@@ -8,17 +8,14 @@ from discord.ext import commands
 from cogs.restya_cog import RestyaCog
 
 from services.activity_notification_service import ActivityNotificationService
-from services.restya_service import RestyaService
 from services.channel_mapping_service import ChannelMappingService
+from services.discord_notification_service import DiscordNotificationService
+from services.restya_service import RestyaService
 
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 RESTYA_TOKEN = os.getenv('RESTYA_TOKEN')
-
-restya_service = RestyaService(os.getenv('RESTYA_URL'), RESTYA_TOKEN)
-channel_mapping = ChannelMappingService('channel_mapping.json')
-
 
 cog_parameters = {
     'orga_id': int(os.getenv('RESTYA_ORGA_ID')),
@@ -26,17 +23,17 @@ cog_parameters = {
     'default_list': os.getenv('RESTYA_BOARD_TEMPLATE').split(',')[0]
 }
 
-bot = commands.Bot(command_prefix='!dragon.')
 
+restya_service = RestyaService(os.getenv('RESTYA_URL'), RESTYA_TOKEN)
+channel_mapping = ChannelMappingService('channel_mapping.json')
+
+bot = commands.Bot(command_prefix='!dragon.')
 bot.add_cog(RestyaCog(bot, channel_mapping, restya_service, cog_parameters))
 
+discord_notify_service = DiscordNotificationService(bot, channel_mapping)
 
-def notify_new_activities(activities):
-    print(len(activities))
-
-
-activity_notification_service = ActivityNotificationService(restya_service)
-activity_notification_service.add_activity_notification_listener(notify_new_activities)
+activity_notification_service = ActivityNotificationService(restya_service, 10)
+activity_notification_service.add_activity_notification_listener(discord_notify_service.notify_restya_activity)
 
 
 @bot.event

@@ -47,7 +47,7 @@ class RestyaCog(commands.Cog, name='Support'):
             channel_id = ctx.channel.id
 
             with self.__lock:
-                if self._channel_mapping.contains(channel_id):
+                if self._channel_mapping.has_channel_board(channel_id):
                     await ctx.send('There is already a board for this channel!')
                 else:
                     board = self._restya_service.create_board(channel_name, self._parameters['orga_id'], self._parameters['board_template'])
@@ -55,10 +55,31 @@ class RestyaCog(commands.Cog, name='Support'):
                         await ctx.send('There was a problem creating the board!')
                     else:
                         board_id = board['id']
-                        self._channel_mapping.add_mapping(channel_id, board_id)
-                        await ctx.send(f"Created a new board for this channel with the name {channel_name}.")
+                        self._channel_mapping.add_board_mapping(channel_id, board_id)
+                        await ctx.send(f"Created a new board for this channel with the name {channel_name} and board id {board_id}.")
         else:
             await ctx.send(f"I can't let you do that {ctx.author.display_name}!")
+
+    @commands.command(name='add_board_notify', help="Adds the current channel to the specified board's list of notification channels.")
+    async def add_board_notify(self, ctx: commands.Context, board_id: int):
+        if ctx.author.guild_permissions.administrator:
+            channel_id = ctx.channel.id
+            if self._channel_mapping.has_board_notification(board_id):
+                await ctx.send("The given board already has a notification set!")
+            elif self._channel_mapping.has_channel_notification(channel_id):
+                await ctx.send("This channel already has a notification set, please remove it first with remove_board_notify!")
+            elif not self._channel_mapping.has_board_channel(board_id):
+                await ctx.send("There is no board linked with that board id!")
+            else:
+                self._channel_mapping.add_notification_mapping(channel_id, board_id)
+                board = self._restya_service.get_board(board_id)
+                await ctx.send(f"Set this channel as a notification for the board **{board['name']}** [**{board_id}**]!")
+        else:
+            await ctx.send(f"I can't let you do that {ctx.author.display_name}!")
+
+    @commands.command(name='remove_board_notify', help="Adds the current channel to the specified board's list of notification channels.")
+    async def remove_board_notify(self, ctx: commands.Context):
+        await ctx.send(f"Sorry not implemented!")
 
     @commands.command(name='add_ticket', help='Adds a new support request to the board associated with this channel in the first list.')
     @commands.guild_only()

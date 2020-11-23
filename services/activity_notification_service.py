@@ -1,4 +1,3 @@
-import time
 import pytz
 import dateutil.parser
 from threading import Event
@@ -10,10 +9,11 @@ from services.restya_service import RestyaService
 
 class ActivityNotificationService:
 
-    def __init__(self, restya_service: RestyaService):
+    def __init__(self, restya_service: RestyaService, update_interval: int = 60):
         self._restya_service = restya_service
         self.__activity_listeners = set()
         self._stop_event = Event()
+        self.__update_interval = update_interval
 
     def add_activity_notification_listener(self, listener: Callable[[List], None]):
         self.__activity_listeners.add(listener)
@@ -33,7 +33,7 @@ class ActivityNotificationService:
                     listener(new_activities)
 
             last_update = activities[0]['create_datetime']
-            self._stop_event.wait(60)
+            self._stop_event.wait(self.__update_interval)
 
     def stop(self):
         self._stop_event.set()
