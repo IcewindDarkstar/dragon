@@ -11,7 +11,7 @@ class RestyaService:
         self._base_url = base_url
         self._auth_token = auth_token
 
-    def _basic_request(self, request_method: Callable, url_param: str, payload: Dict = {}) -> Union[Dict, List]:
+    def _basic_request(self, request_method: Callable, url_param: str, payload: Dict = None) -> Union[Dict, List]:
         response = request_method(f"{self._base_url}/{url_param}", params={'token': self._auth_token}, json=payload)
 
         if response.ok:
@@ -37,7 +37,7 @@ class RestyaService:
         return board_response if isinstance(board_response, dict) else None
 
     def get_board_lists(self, board_id) -> Dict:
-        return self._basic_request(requests.get, f'v1/boards/{board_id}/lists.json')['data']
+        return self.get_board(board_id)['lists']
 
     def find_board_list(self, board_id, board_list_name) -> Dict:
         board_lists = self.get_board_lists(board_id)

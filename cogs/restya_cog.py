@@ -41,22 +41,24 @@ class RestyaCog(commands.Cog, name='Support'):
             await ctx.send('\n'.join(output))
 
     @commands.command(name='create_board', help='Creates a new restya board with the name of the current channel and links them.')
-    @commands.has_role('admin')
     async def create_board(self, ctx: commands.Context):
-        channel_name = ctx.channel.name
-        channel_id = ctx.channel.id
+        if ctx.author.guild_permissions.administrator:
+            channel_name = ctx.channel.name
+            channel_id = ctx.channel.id
 
-        with self.__lock:
-            if self._channel_mapping.contains(channel_id):
-                await ctx.send('There is already a board for this channel!')
-            else:
-                board = self._restya_service.create_board(channel_name, self._parameters['orga_id'], self._parameters['board_template'])
-                if board is None:
-                    await ctx.send('There was a problem creating the board!')
+            with self.__lock:
+                if self._channel_mapping.contains(channel_id):
+                    await ctx.send('There is already a board for this channel!')
                 else:
-                    board_id = board['id']
-                    self._channel_mapping.add_mapping(channel_id, board_id)
-                    await ctx.send(f"Created a new board for this channel with the name {channel_name}.")
+                    board = self._restya_service.create_board(channel_name, self._parameters['orga_id'], self._parameters['board_template'])
+                    if board is None:
+                        await ctx.send('There was a problem creating the board!')
+                    else:
+                        board_id = board['id']
+                        self._channel_mapping.add_mapping(channel_id, board_id)
+                        await ctx.send(f"Created a new board for this channel with the name {channel_name}.")
+        else:
+            await ctx.send(f"I can't let you do that {ctx.author.display_name}!")
 
     @commands.command(name='add_ticket', help='Adds a new support request to the board associated with this channel in the first list.')
     @commands.guild_only()
