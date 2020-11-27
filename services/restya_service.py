@@ -57,3 +57,6 @@ class RestyaService:
             'list_id': list_id,
         })
 
+    def get_activities(self) -> List[Dict]:
+        return self._basic_request(requests.get, 'v1/activities.json')['data']
+
