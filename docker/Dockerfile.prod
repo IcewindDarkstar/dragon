@@ -1,0 +1,3 @@
+FROM dragon-base
+COPY /src/ ./
+CMD ["python", "bot.py"]

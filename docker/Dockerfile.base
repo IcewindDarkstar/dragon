@@ -1,0 +1,9 @@
+FROM python:3
+
+RUN mkdir -p /src
+WORKDIR /src
+
+COPY requirements ./
+RUN pip install --no-cache-dir -r requirements
+
+RUN mkdir /data

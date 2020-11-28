@@ -1,0 +1,28 @@
+#!/bin/bash
+ENV_FILE=".env"
+IMAGE_FILE="dragon-prod-images.tar"
+
+if [ ! -f "$ENV_FILE" ] ; then
+  echo "File '$ENV_FILE' does not exist."
+  exit 1
+fi
+
+if [ ! -f "$IMAGE_FILE" ] ; then
+  echo "File '$IMAGE_FILE' does not exist."
+  exit 1
+fi
+
+CONTAINER_NAME="dragon-prod"
+VOLUME_NAME=$CONTAINER_NAME
+PROD_IMAGE_NAME=$CONTAINER_NAME
+PREV_CONTAINER_LOGS="/tmp/$CONTAINER_NAME-prev.log"
+
+docker load -i $IMAGE_FILE
+
+docker volume create $VOLUME_NAME
+
+docker logs $CONTAINER_NAME > $PREV_CONTAINER_LOGS
+docker stop $CONTAINER_NAME
+docker rm $CONTAINER_NAME
+
+docker run -d --name $CONTAINER_NAME --env-file $ENV_FILE --mount source=$VOLUME_NAME,target=/data $PROD_IMAGE_NAME

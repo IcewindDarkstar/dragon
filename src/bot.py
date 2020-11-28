@@ -1,7 +1,6 @@
 import os
 import threading
-
-from dotenv import load_dotenv
+import logging
 
 from discord.ext import commands
 
@@ -13,9 +12,14 @@ from services.discord_notification_service import DiscordNotificationService
 from services.restya_service import RestyaService
 
 
-load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 RESTYA_TOKEN = os.getenv('RESTYA_TOKEN')
+
+logging.basicConfig(level=logging.INFO)
+
+channel_mapping = ChannelMappingService('/data/channel_mapping.json')
+restya_service = RestyaService(os.getenv('RESTYA_URL'), RESTYA_TOKEN)
+
 
 cog_parameters = {
     'orga_id': int(os.getenv('RESTYA_ORGA_ID')),
@@ -23,9 +27,6 @@ cog_parameters = {
     'default_list': os.getenv('RESTYA_BOARD_TEMPLATE').split(',')[0]
 }
 
-
-restya_service = RestyaService(os.getenv('RESTYA_URL'), RESTYA_TOKEN)
-channel_mapping = ChannelMappingService('channel_mapping.json')
 
 bot = commands.Bot(command_prefix='!dragon.')
 bot.add_cog(RestyaCog(bot, channel_mapping, restya_service, cog_parameters))
@@ -41,7 +42,7 @@ async def on_ready():
     if len(bot.guilds) != 1:
         raise ValueError('Not exactly one guild is registered for this bot!')
 
-    print('Discord connected, ready for work :)')
+    logging.info('Discord connected, ready for work :)')
 
 
 if __name__ == '__main__':
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     # this is a blocking call that is terminated by ctrl-c
     bot.run(DISCORD_TOKEN, bot=True, reconnect=True)
 
-    print("Stopping activity service.")
+    logging.info("Stopping activity service.")
     activity_notification_service.stop()
     activity_thread.join()
-    print("Finished")
+    logging.info("Finished")

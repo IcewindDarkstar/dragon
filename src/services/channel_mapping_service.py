@@ -1,15 +1,24 @@
-
 import json
+import os
+import logging
 
 
 class ChannelMappingService:
 
     def __init__(self, mapping_file_name: str):
         self.__mapping_file_name = mapping_file_name
+        if not os.path.exists(mapping_file_name):
+            with open(mapping_file_name, 'w') as fp:
+                fp.write("[]")
+                logging.info("creating empty mapping file")
+
         with open(mapping_file_name) as fp:
             # we have to convert the string keys to integers to have the proper typing later on
             self.__data = json.load(fp)
+            logging.info("reading channel mapping file")
+            logging.info(self.__data)
             self.__channel_mapping = {int(entry["channel_id"]): entry for entry in self.__data}
+            logging.info(self.__channel_mapping)
             self.__board_mapping = {int(entry["board_id"]): entry for entry in self.__data}
             self.__notification_channels = set()
             for entry in self.__data:
@@ -27,12 +36,14 @@ class ChannelMappingService:
         return board_id in self.__board_mapping
 
     def add_board_mapping(self, channel_id: int, board_id: int):
-        self.__data.add({'channel_id': channel_id, 'board_id': board_id, 'notification_channels': []})
-        self.__board_mapping[board_id] = channel_id
-        self.__channel_mapping[channel_id] = board_id
+        entry = {'channel_id': channel_id, 'board_id': board_id, 'notification_channels': []}
+        self.__data.append(entry)
+        self.__board_mapping[board_id] = entry
+        self.__channel_mapping[channel_id] = entry
         self.__write_mapping_to_file()
 
     def get_board_id(self, channel_id):
+        logging.info(self.__channel_mapping.get(channel_id, {}))
         return self.__channel_mapping.get(channel_id, {}).get('board_id', None)
 
     def has_board_notification(self, board_id: int):
