@@ -5,6 +5,7 @@ from discord.ext import commands
 
 from services.channel_mapping_service import ChannelMappingService
 from services.restya_service import RestyaService
+from services.discord_message_service import DiscordMessageService
 
 
 class RestyaCog(commands.Cog, name='Support'):
@@ -28,17 +29,7 @@ class RestyaCog(commands.Cog, name='Support'):
         if board_id is None:
             await ctx.send('There is no board for this channel, an admin create one by calling the create_board command!')
         else:
-            board = self._restya_service.get_board(board_id)
-            ctx.typing()
-            output = [f"Board ***{board['name']} [{board_id}]*** contains:"]
-            for board_list in board['lists']:
-                output.append(f"**{board_list['name']}:**")
-                if board_list['cards'] is not None:
-                    for card in board_list['cards']:
-                        output.append(
-                            f"\t• [{card['id']}] {card['name']} - {card['description'] if card['description'] is not None else ''}")
-
-            await ctx.send('\n'.join(output))
+            await self.print_board(ctx, board_id)
 
     @commands.command(name='create_board', help='Creates a new restya board with the name of the current channel and links them.')
     async def create_board(self, ctx: commands.Context):
@@ -54,9 +45,9 @@ class RestyaCog(commands.Cog, name='Support'):
                     if board is None:
                         await ctx.send('There was a problem creating the board!')
                     else:
-                        board_id = board['id']
+                        board_id = int(board['id'])
                         self._channel_mapping.add_board_mapping(channel_id, board_id)
-                        await ctx.send(f"Created a new board for this channel with the name {channel_name} and board id {board_id}.")
+                        await self.create_board_message(ctx)
         else:
             await ctx.send(f"I can't let you do that {ctx.author.display_name}!")
 
@@ -80,13 +71,13 @@ class RestyaCog(commands.Cog, name='Support'):
     @commands.command(name='remove_board_notify', help="Adds the current channel to the specified board's list of notification channels.")
     async def remove_board_notify(self, ctx: commands.Context):
         await ctx.send(f"Sorry not implemented!")
-
+   
     @commands.command(name='add_ticket', help='Adds a new support request to the board associated with this channel in the first list.')
     @commands.guild_only()
     async def add_ticket(self, ctx: commands.Context, *, title: str):
         ctx.typing()
         with self.__lock:
-            user_title = f"{ctx.author.display_name}: {title}"
+            user_title = f"({ctx.author.display_name}) {title}"
             board_id = self._channel_mapping.get_board_id(ctx.channel.id)
             if board_id is None:
                 await ctx.send('There is no board for this channel, an admin create one by calling the create_board command!')
@@ -100,4 +91,47 @@ class RestyaCog(commands.Cog, name='Support'):
             await ctx.send('Could not find the required argument "title", please provide a title for your ticket!')
             await ctx.send_help(self.add_ticket)
 
+    @commands.command(name='create_board_message', help='Creates and pins a new board message for this channel while deleting the old message.')
+    async def create_board_message(self, ctx: commands.Context):
+        if not ctx.author.guild_permissions.administrator:
+            await ctx.send(f"I can't let you do that {ctx.author.display_name}!")
+            return
 
+        board_id = self._channel_mapping.get_board_id(ctx.channel.id)
+
+        if board_id is None:
+            await ctx.send('There is no board for this channel, an admin can create one by calling the create_board command!')
+            return
+
+        old_message_id = self._channel_mapping.get_message_id(ctx.channel.id)
+        old_message = None
+        
+        if old_message_id is not None:
+            old_message = await ctx.fetch_message(old_message_id) 
+            await old_message.unpin()
+       
+        new_message = await self.print_board(ctx, board_id)
+        self._channel_mapping.set_message_mapping(ctx.channel.id, new_message.id)
+        await new_message.pin()
+
+        if old_message_id is not None:
+            await old_message.delete()
+
+    @commands.command(name='refresh_board', help='Refreshes the board message in this channel.')
+    async def refresh_board(self, ctx: commands.Context):
+        board_id = self._channel_mapping.get_board_id(ctx.channel.id)
+
+        if board_id is None:
+            await ctx.send('There is no board for this channel, an admin create one by calling the create_board command!')
+            return
+
+        board = self._restya_service.get_board(board_id)
+        message_id = self._channel_mapping.get_message_id(ctx.channel.id)
+        await DiscordMessageService(self.bot, self._channel_mapping).refresh_message(ctx.channel.id, message_id, board)
+ 
+    async def print_board(self, ctx: commands.Context, board_id: int):
+        board = self._restya_service.get_board(board_id)
+        board_message = DiscordMessageService(self.bot, self._channel_mapping).create_board_message(board)
+        ctx.typing()
+        message = await ctx.send('\n'.join(board_message))
+        return message

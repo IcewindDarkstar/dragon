@@ -2,6 +2,8 @@ import json
 import os
 import logging
 
+from types import MappingProxyType
+
 
 class ChannelMappingService:
 
@@ -32,11 +34,11 @@ class ChannelMappingService:
     def has_channel_board(self, channel_id: int):
         return channel_id in self.__channel_mapping
 
-    def has_board_channel(self, board_id):
+    def has_board_channel(self, board_id: int):
         return board_id in self.__board_mapping
 
     def add_board_mapping(self, channel_id: int, board_id: int):
-        entry = {'channel_id': channel_id, 'board_id': board_id, 'notification_channels': []}
+        entry = {'channel_id': channel_id, 'board_id': board_id, 'message_id': None, 'notification_channels': []}
         self.__data.append(entry)
         self.__board_mapping[board_id] = entry
         self.__channel_mapping[channel_id] = entry
@@ -60,3 +62,13 @@ class ChannelMappingService:
 
     def get_notification_channels(self, board_id: int):
         return self.__board_mapping[board_id]['notification_channels']
+
+    def set_message_mapping(self, channel_id: int, message_id: int):
+        self.__channel_mapping[channel_id]['message_id'] = message_id
+        self.__write_mapping_to_file()
+
+    def get_channel_mapping(self):
+        return MappingProxyType(self.__channel_mapping)
+
+    def get_message_id(self, channel_id: int):
+        return self.__channel_mapping[channel_id].get('message_id', None)
