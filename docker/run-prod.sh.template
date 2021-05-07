@@ -25,4 +25,4 @@ docker logs $CONTAINER_NAME > $PREV_CONTAINER_LOGS
 docker stop $CONTAINER_NAME
 docker rm $CONTAINER_NAME
 
-docker run -d --name $CONTAINER_NAME --env-file $ENV_FILE --mount source=$VOLUME_NAME,target=/data $PROD_IMAGE_NAME
+docker run -d --restart always --name $CONTAINER_NAME --env-file $ENV_FILE --mount source=$VOLUME_NAME,target=/data $PROD_IMAGE_NAME

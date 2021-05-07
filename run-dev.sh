@@ -49,4 +49,4 @@ docker rm $CONTAINER_NAME
 
 cp -r $SRC_DIR/* $DEV_SRC_DIR
 
-docker run -d --name $CONTAINER_NAME --env-file $TARGET_ENV_FILE --mount type=bind,source=$DEV_SRC_DIR,target=/src --mount type=bind,source=$DEV_DATA_DIR,target=/data $BASE_IMAGE_NAME python bot.py
+docker run -d --restart always --name $CONTAINER_NAME --env-file $TARGET_ENV_FILE --mount type=bind,source=$DEV_SRC_DIR,target=/src --mount type=bind,source=$DEV_DATA_DIR,target=/data $BASE_IMAGE_NAME python bot.py
