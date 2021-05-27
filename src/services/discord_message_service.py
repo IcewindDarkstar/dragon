@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from discord.ext import commands
 
@@ -15,13 +16,13 @@ class DiscordMessageService:
         channel_mapping = self._channel_mapping_service.get_channel_mapping()
         refresh_future = asyncio.run_coroutine_threadsafe(self.refresh_messages_for_channels(boards, channel_mapping), self._discord_bot.loop)
         refresh_future.result()
-        print('DiscordMessageService.refresh_messages: Refreshed all board messages', flush=True)
+        logging.info('DiscordMessageService.refresh_messages: Refreshed all board messages')
 
     async def refresh_messages_for_channels(self, boards: dict, channel_mapping: dict):
         for key, value in channel_mapping.items():
             if not (value['board_id'] and value['message_id']):
-                print('DiscordMessageService.refresh_messages_for_channels: '
-                    + 'ould not find board_id or message_id for channel ' + str(key), flush=True)
+                logging.info('DiscordMessageService.refresh_messages_for_channels: '
+                    + 'could not find board_id or message_id for channel ' + str(key))
                 continue
 
             await self.refresh_message(key, value['message_id'], boards[str(value['board_id'])])
@@ -35,21 +36,22 @@ class DiscordMessageService:
             channel = self._discord_bot.get_channel(channel_id)
 
             if channel is None:
-                print('DiscordMessageService.refresh_message: Channel is none for channel_id ' + str(channel_id), flush=True)
+                logging.info('DiscordMessageService.refresh_message: Channel is none for channel_id ' + str(channel_id))
                 return
 
         message = await channel.fetch_message(message_id)
 
         if message is None:
-            print('DiscordMessageService.refresh_message: Message is none for message_id ' + str(message_id), flush=True)
+            logging.info('DiscordMessageService.refresh_message: Message is none for message_id ' + str(message_id))
             return
 
         new_content = self.create_board_message(board)
-        print('DiscordMessageService.refresh_message: New content will be ' + str(new_content), flush=True)
+        logging.info('DiscordMessageService.refresh_message: New content will be ' + str(new_content))
         await message.edit(content=str('\n'.join(new_content)))
 
     def create_board_message(self, board: dict):
-        message = [f"Board **[{board['id']}] {board['name']}** contains:"]
+        board_url = f"https://restya.indes.ninja/#/board/{board['id']}"
+        message = [f"Board **[{board['id']}] {board['name']}** contains ({board_url}):"]
 
         for board_list in board['lists']:
             if board_list['is_archived']:

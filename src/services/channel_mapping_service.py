@@ -19,8 +19,7 @@ class ChannelMappingService:
             self.__data = json.load(fp)
             logging.info("reading channel mapping file")
             logging.info(self.__data)
-            self.__channel_mapping = {int(entry["channel_id"]): entry for entry in self.__data}
-            logging.info(self.__channel_mapping)
+            self.__channel_mapping = {int(entry["channel_id"]): entry for entry in self.__data if entry["channel_id"] is not None}
             self.__board_mapping = {int(entry["board_id"]): entry for entry in self.__data}
             self.__notification_channels = set()
             for entry in self.__data:
@@ -38,10 +37,7 @@ class ChannelMappingService:
         return board_id in self.__board_mapping
 
     def add_board_mapping(self, channel_id: int, board_id: int):
-        entry = {'channel_id': channel_id, 'board_id': board_id, 'message_id': None, 'notification_channels': []}
-        self.__data.append(entry)
-        self.__board_mapping[board_id] = entry
-        self.__channel_mapping[channel_id] = entry
+        self.__ensure_basic_entry_exists(board_id, channel_id)
         self.__write_mapping_to_file()
 
     def get_board_id(self, channel_id):
@@ -55,10 +51,12 @@ class ChannelMappingService:
         return channel_id in self.__notification_channels
 
     def add_notification_mapping(self, channel_id: int, board_id: int):
-        self.__board_mapping[board_id]['notification_channels'].append(channel_id)
-        self.__notification_channels.add(channel_id)
-        self.__notified_boards.add(board_id)
-        self.__write_mapping_to_file()
+        self.__ensure_basic_entry_exists(board_id)
+        if channel_id not in self.__board_mapping[board_id]['notification_channels']:
+            self.__board_mapping[board_id]['notification_channels'].append(channel_id)
+            self.__notification_channels.add(channel_id)
+            self.__notified_boards.add(board_id)
+            self.__write_mapping_to_file()
 
     def get_notification_channels(self, board_id: int):
         return self.__board_mapping[board_id]['notification_channels']
@@ -72,3 +70,14 @@ class ChannelMappingService:
 
     def get_message_id(self, channel_id: int):
         return self.__channel_mapping[channel_id].get('message_id', None)
+
+    def __ensure_basic_entry_exists(self, board_id: int, channel_id: int = None):
+        if board_id in self.__board_mapping:
+            if channel_id is not None:
+                self.__board_mapping[board_id]['channel_id'] = channel_id
+        else:
+            entry = {'channel_id': channel_id, 'board_id': board_id, 'message_id': None, 'notification_channels': []}
+            self.__data.append(entry)
+            self.__board_mapping[board_id] = entry
+            if channel_id is not None:
+                self.__channel_mapping[channel_id] = entry
