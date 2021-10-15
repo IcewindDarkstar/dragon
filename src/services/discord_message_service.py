@@ -3,6 +3,7 @@ import logging
 
 from discord.ext import commands
 
+from utility.discord_message_util import escape_message
 from services.channel_mapping_service import ChannelMappingService
 
 
@@ -66,6 +67,6 @@ class DiscordMessageService:
                 if board_card['is_archived']:
                     continue
 
-                message.append(f"\t• [{board_card['id']}] {board_card['name']}")
+                message.append(f"\t• [{board_card['id']}] {escape_message(board_card['name'])}")
 
         return message
